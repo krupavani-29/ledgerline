@@ -46,10 +46,8 @@ class Store {
 
   persist() {
     this._ensureDir();
-    const tempPath = `${this.filePath}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
     const data = JSON.stringify(this.state, null, 2);
-    fs.writeFileSync(tempPath, data, 'utf-8');
-    fs.renameSync(tempPath, this.filePath);
+    fs.writeFileSync(this.filePath, data, 'utf-8');
   }
 
   // --- Mutex / Concurrency Control ---

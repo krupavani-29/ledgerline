@@ -5,20 +5,28 @@ const ledgerService = require('../ledger/ledgerService');
 // Helper to convert dollars (e.g. 10.50) to integer cents (1050)
 function parseDollarsToCents(amount) {
   if (amount === undefined || amount === null) {
-    throw new Error('Amount is required');
+    const err = new Error('Amount is required');
+    err.statusCode = 400;
+    throw err;
   }
   const parsed = Number(amount);
   if (isNaN(parsed) || !isFinite(parsed) || parsed <= 0) {
-    throw new Error('Amount must be a positive number greater than 0');
+    const err = new Error('Amount must be a positive number greater than 0');
+    err.statusCode = 400;
+    throw err;
   }
   // Max transaction guard: e.g. $10,000,000 to prevent integer overflow
   if (parsed > 10000000) {
-    throw new Error('Transaction amount exceeds maximum allowed limit ($10,000,000)');
+    const err = new Error('Transaction amount exceeds maximum allowed limit ($10,000,000)');
+    err.statusCode = 400;
+    throw err;
   }
   // Convert to cents with exact rounding
   const cents = Math.round(parsed * 100);
   if (cents <= 0) {
-    throw new Error('Amount in cents must be at least 1 cent');
+    const err = new Error('Amount in cents must be at least 1 cent');
+    err.statusCode = 400;
+    throw err;
   }
   return cents;
 }
