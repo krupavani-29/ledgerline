@@ -1,0 +1,43 @@
+{
+  "name": "ledgerline",
+  "version": "1.0.0",
+  "description": "LedgerLine — High-integrity money movement with a provable double-entry ledger, strict idempotency, and concurrency protection.",
+  "main": "backend/src/server.js",
+  "scripts": {
+    "start": "node backend/src/server.js",
+    "dev:backend": "node --watch backend/src/server.js",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev": "node scripts/dev.js",
+    "build:frontend": "npm --prefix frontend run build",
+    "build": "npm run build:frontend",
+    "seed": "node backend/src/db/seed.js",
+    "test": "node --test backend/tests/**/*.test.js",
+    "test:concurrency": "node --test backend/tests/concurrency/*.test.js",
+    "test:security": "node --test backend/tests/security/*.test.js"
+  },
+  "keywords": [
+    "fintech",
+    "double-entry",
+    "ledger",
+    "idempotency",
+    "concurrency",
+    "audit-trail",
+    "rbac",
+    "security"
+  ],
+  "author": "Kavuri Krupavani",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "supertest": "^7.0.0"
+  }
+}
