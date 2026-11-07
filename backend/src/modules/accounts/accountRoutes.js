@@ -19,3 +19,4 @@ router.get('/:id', (req, res, next) => accountController.getAccountById(req, res
 router.get('/:id/statement', (req, res, next) => accountController.getAccountStatement(req, res, next));
 
 module.exports = router;
+

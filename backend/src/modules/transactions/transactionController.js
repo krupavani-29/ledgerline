@@ -80,3 +80,4 @@ class TransactionController {
 }
 
 module.exports = new TransactionController();
+

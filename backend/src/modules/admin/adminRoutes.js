@@ -12,3 +12,4 @@ router.get('/users', (req, res, next) => adminController.getUsers(req, res, next
 router.patch('/accounts/:id/status', (req, res, next) => adminController.updateAccountStatus(req, res, next));
 
 module.exports = router;
+

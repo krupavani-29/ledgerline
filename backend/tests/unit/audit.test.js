@@ -89,3 +89,4 @@ test('Cryptographic Audit Trail Unit Tests', async (t) => {
     assert.ok(result.error.includes('Sequence discontinuity') || result.error.includes('Broken chain link'));
   });
 });
+

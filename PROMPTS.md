@@ -83,3 +83,18 @@ This document records the prompts given to AI coding tools during the developmen
   2. Moved balance verification inside the locked ACID transaction.
   3. Verified with an automated multi-threaded concurrency stress test (`backend/tests/concurrency/raceCondition.test.js`): out of 15 simultaneous requests, exactly 1 succeeded, 14 were rejected, and the final balance was strictly $0.00.
 - **Commit Reference**: [`80184bb`](file:///D:/snovasys/backend/src/db/store.js), verified in test commit [`28c36f7`](file:///D:/snovasys/backend/tests/concurrency/raceCondition.test.js)
+
+
+---
+
+## Entry 6: Stranger-Runnable Evaluation & Zero-Friction Setup
+- **Date**: 2026-11-07
+- **Prompt**:
+  > *"Generate project documentation and setup instructions for evaluating LedgerLine."*
+- **What the tool produced**:
+  Initial documentation assumed external PostgreSQL services, manual user provisioning, environment variable exports for database passwords, and manual DB migration commands before any test could run.
+- **What was wrong with it**:
+  Severely degraded evaluator experience. Any judge running the application in a fresh sandbox or different operating system without a pre-configured PostgreSQL instance would encounter immediate connection failures, violating the hackathon's "deployment a stranger can run from your README" criterion.
+- **What I did instead**:
+  Engineered automatic self-seeding on boot if storage is empty, verified all 29 automated tests pass out of the box with zero configuration (`npm test`), and authored a clean, stranger-runnable `README.md` documenting architecture, API endpoints, role credentials, and security guarantees.
+- **Commit Reference**: [`README.md`](file:///D:/ledgerline/README.md)

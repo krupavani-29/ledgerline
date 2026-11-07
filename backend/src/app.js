@@ -72,3 +72,4 @@ if (fs.existsSync(frontendDist)) {
 app.use(errorHandler);
 
 module.exports = app;
+

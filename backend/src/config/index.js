@@ -9,7 +9,7 @@ module.exports = {
   DATA_DIR: path.resolve(process.env.DATA_DIR || './data'),
   DB_FILE: path.resolve(process.env.DB_FILE || './data/ledgerline.json'),
   CORS_ORIGIN: process.env.CORS_ORIGIN || '*',
-  
+
   // System Roles
   ROLES: {
     ADMIN: 'ADMIN',
@@ -40,7 +40,7 @@ module.exports = {
 
   // Currency
   CURRENCY: 'USD',
-  
+
   // Supported Transaction Types
   TRANSACTION_TYPES: {
     DEPOSIT: 'DEPOSIT',

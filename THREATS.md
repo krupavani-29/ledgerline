@@ -47,3 +47,4 @@ This document defines the comprehensive threat model for **LedgerLine** based on
   2. The `AuditService.verifyChain()` algorithm traverses the entire ledger from genesis.
   3. Any modified byte changes the recomputed hash, immediately flagging tampering at that exact sequence number.
   4. Tested and verified in `backend/tests/unit/audit.test.js`.
+
