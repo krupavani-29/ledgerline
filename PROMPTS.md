@@ -116,4 +116,4 @@ This document records the prompts given to AI coding tools during the developmen
   2. Enforced strict DTO whitelist in `CreateAccountRequest.java` (only `userId` and `currency` accepted). Hardcoded initial balance strictly to `0L` (paise) in `AccountService.java`.
   3. Added sequence advancement statements (`ALTER TABLE accounts ALTER COLUMN id RESTART WITH 10`) in `V2__seed_data.sql` to advance sequences beyond seeded data across PostgreSQL and H2.
   4. Added 5 comprehensive integration tests in `AuthzIT` covering: holder reading own account (200), holder reading foreign account (404), holder creating account (403), auditor on write (403), and admin creating account with client-supplied balance ignored (201 with balance = 0).
-- **Commit Reference**: (Pending commit for Module 2)
+- **Commit Reference**: [`4591a75`](https://github.com/krupavani-29/ledgerline/commit/4591a75)
