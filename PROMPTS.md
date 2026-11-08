@@ -98,3 +98,22 @@ This document records the prompts given to AI coding tools during the developmen
 - **What I did instead**:
   Engineered automatic self-seeding on boot if storage is empty, verified all 29 automated tests pass out of the box with zero configuration (`npm test`), and authored a clean, stranger-runnable `README.md` documenting architecture, API endpoints, role credentials, and security guarantees.
 - **Commit Reference**: [`README.md`](file:///D:/ledgerline/README.md)
+
+---
+
+## Entry 7: Object-Level Authorization (404 vs 403), Mass-Assignment Protection & Sequence Alignment (Module 2)
+- **Date**: 2026-11-08
+- **Prompt**:
+  > *"Implement Module 2: GET /api/accounts (own), GET /api/accounts/{id}, POST /api/accounts (admin). Foreign id => 404. Test: holder A reading B's account => 404; body with ownerId ignored."*
+- **What the tool produced**:
+  Initially, standard Spring Security and REST conventions would return HTTP `403 Forbidden` when a HOLDER attempted to access another user's account (`/api/accounts/{id}`). Additionally, client-supplied payloads on `POST /api/accounts` could inadvertently permit `balance` mass-assignment if entity mapping was loose. Furthermore, during test execution with seeded accounts (IDs 1, 2, 3), the database auto-increment sequence remained at 1, causing primary key conflicts on account creation.
+- **What was wrong with it**:
+  1. Returning `403 Forbidden` for non-owned accounts leaks whether an account ID exists to unauthorized callers, enabling attacker enumeration (BOLA / STRIDE Information Disclosure).
+  2. Allowing client-supplied `balance` or `is_system` in account creation payloads enables balance tampering or privilege escalation before any money transaction occurs.
+  3. Unsynchronized auto-increment sequence broke subsequent creation of accounts with HTTP 500 duplicate key error.
+- **What I did instead**:
+  1. In `AccountService.java`, implemented ownership verification that throws `ResourceNotFoundException` (HTTP `404 Not Found`) whenever a HOLDER requests an account they do not own, making non-owned accounts indistinguishable from non-existent accounts.
+  2. Enforced strict DTO whitelist in `CreateAccountRequest.java` (only `userId` and `currency` accepted). Hardcoded initial balance strictly to `0L` (paise) in `AccountService.java`.
+  3. Added sequence advancement statements (`ALTER TABLE accounts ALTER COLUMN id RESTART WITH 10`) in `V2__seed_data.sql` to advance sequences beyond seeded data across PostgreSQL and H2.
+  4. Added 5 comprehensive integration tests in `AuthzIT` covering: holder reading own account (200), holder reading foreign account (404), holder creating account (403), auditor on write (403), and admin creating account with client-supplied balance ignored (201 with balance = 0).
+- **Commit Reference**: (Pending commit for Module 2)

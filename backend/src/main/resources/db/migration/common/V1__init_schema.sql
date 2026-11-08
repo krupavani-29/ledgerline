@@ -83,3 +83,4 @@ CREATE TABLE audit_log (
 );
 
 CREATE INDEX idx_audit_sequence ON audit_log(sequence_num);
+
