@@ -9,3 +9,4 @@ public record CreateAccountRequest(
     Long userId,
     String currency
 ) {}
+
