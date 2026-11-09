@@ -117,3 +117,23 @@ This document records the prompts given to AI coding tools during the developmen
   3. Added sequence advancement statements (`ALTER TABLE accounts ALTER COLUMN id RESTART WITH 10`) in `V2__seed_data.sql` to advance sequences beyond seeded data across PostgreSQL and H2.
   4. Added 5 comprehensive integration tests in `AuthzIT` covering: holder reading own account (200), holder reading foreign account (404), holder creating account (403), auditor on write (403), and admin creating account with client-supplied balance ignored (201 with balance = 0).
 - **Commit Reference**: [`4591a75`](https://github.com/krupavani-29/ledgerline/commit/4591a75)
+
+---
+
+## Entry 8: High-Integrity Money Engine: Pessimistic Row Locking, Atomic Idempotency Claiming, and TOCTOU Race Defense (Module 3)
+- **Date**: 2026-11-09
+- **Prompt**:
+  > *"Before writing code, explain in 5 lines how you will make the balance check safe under concurrent requests. Then implement Module 3 from docs/BRIEF.md (deposits, withdrawals, transfers, balanced ledger legs, idempotency key replay, 422 on payload change, 50 parallel withdrawals under row locking)."*
+- **What the tool produced**:
+  Initially, the implementation checked account ownership by calling `accountRepository.findById()` prior to calling `accountRepository.findAllByIdInOrderByIdAscForUpdate()` for pessimistic row locking. For idempotency, it attempted PostgreSQL-specific `ON CONFLICT DO NOTHING` inside the primary `@Transactional` boundary and a short 3-second wait for concurrent replay.
+- **What was wrong with it**:
+  1. Calling `findById()` before the row lock loaded the account entity into Hibernate's first-level session cache. Under concurrent withdrawal requests, threads read the stale cached balance from the persistence context instead of the freshly locked row from the database, introducing a Time-of-Check to Time-of-Use (TOCTOU) race.
+  2. The `ON CONFLICT` clause caused SQL syntax parsing errors in H2 test mode, and duplicate key constraint violations within a Hibernate `@Transactional` session marked the transaction as rollback-only.
+  3. A tight 3-second polling window in `IdempotencyService` caused tail threads in 20-thread parallel stress tests to time out with HTTP 400 before the winning thread committed the transaction receipt.
+- **What I did instead**:
+  1. Restructured `LedgerPostingService` so that exclusive row locks are acquired first via `findAllByIdInOrderByIdAscForUpdate(lockOrder)` with account IDs sorted in ascending order (preventing deadlocks). Account ownership and balance checks are executed strictly on the locked entity after the row lock is secured.
+  2. Implemented atomic single-statement key claiming using standard ANSI SQL `INSERT INTO idempotency_keys (...) SELECT ... WHERE NOT EXISTS (...)` via `JdbcTemplate` outside the money-movement transaction boundary, avoiding Hibernate session rollback issues and eliminating check-then-insert race conditions.
+  3. Increased lock timeout and Hikari pool size in test properties and extended the parallel idempotency polling loop to cleanly replay cached responses to concurrent callers.
+  4. Created 6 comprehensive integration tests in `MoneyEngineIT`: input validation (400 on <= 0, > 100M paise, missing header), transfer validation (self-transfer 400, foreign account 404), payload mismatch on key reuse (422), 20 parallel requests with identical key returning single transaction receipt, 50 parallel withdrawals never going negative under concurrent load, and total ledger conservation summing to 0 paise.
+- **Commit Reference**: [`a63999e`](https://github.com/krupavani-29/ledgerline/commit/a63999e)
+
