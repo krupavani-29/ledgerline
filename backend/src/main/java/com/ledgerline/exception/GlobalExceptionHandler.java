@@ -75,6 +75,12 @@ public class GlobalExceptionHandler {
                 .body(ApiError.of("VALIDATION_ERROR", msg));
     }
 
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ApiError> handleRateLimitExceeded(RateLimitExceededException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(ApiError.of("TOO_MANY_REQUESTS", ex.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGenericException(Exception ex) {
         // Security Decision: Raw exception details and SQL errors are suppressed in the API response

@@ -57,8 +57,8 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
-                        .requestMatchers("/api/health").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        .requestMatchers("/api/health/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
                         // AGENTS.md Rule 8: AUDITOR is strictly read-only on ledger/audit. Any write => 403
                         .requestMatchers(HttpMethod.POST, "/api/**").hasAnyRole("ADMIN", "HOLDER")
                         .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyRole("ADMIN", "HOLDER")
