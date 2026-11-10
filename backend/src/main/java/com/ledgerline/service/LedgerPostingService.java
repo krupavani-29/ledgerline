@@ -26,17 +26,20 @@ public class LedgerPostingService {
     private final TransactionRepository transactionRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
     private final IdempotencyService idempotencyService;
+    private final AuditService auditService;
 
     public LedgerPostingService(
             AccountRepository accountRepository,
             TransactionRepository transactionRepository,
             LedgerEntryRepository ledgerEntryRepository,
-            IdempotencyService idempotencyService
+            IdempotencyService idempotencyService,
+            AuditService auditService
     ) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
         this.idempotencyService = idempotencyService;
+        this.auditService = auditService;
     }
 
     // =========================================================================
@@ -86,6 +89,15 @@ public class LedgerPostingService {
         );
 
         idempotencyService.recordSuccess(user.getId(), idempotencyKey, receipt);
+        auditService.logEvent(
+                user.getUsername(),
+                user.getRole().name(),
+                "MONEY_DEPOSIT",
+                "/api/deposits",
+                "SUCCESS",
+                null,
+                "Deposited " + request.amount() + " paise into account " + lockedUserAcc.getId() + " (tx: " + tx.getReferenceId() + ")"
+        );
         return receipt;
     }
 
@@ -108,6 +120,15 @@ public class LedgerPostingService {
         verifyAccountOwnership(lockedUserAcc, user);
 
         if (lockedUserAcc.getBalance() < request.amount()) {
+            auditService.logEvent(
+                    user.getUsername(),
+                    user.getRole().name(),
+                    "MONEY_WITHDRAWAL",
+                    "/api/withdrawals",
+                    "FAILED",
+                    null,
+                    "Insufficient funds for account " + lockedUserAcc.getId() + ": available " + lockedUserAcc.getBalance() + " paise, requested " + request.amount() + " paise"
+            );
             throw new InsufficientFundsException("Insufficient funds. Available: " + lockedUserAcc.getBalance() + " paise, requested: " + request.amount() + " paise");
         }
 
@@ -140,6 +161,15 @@ public class LedgerPostingService {
         );
 
         idempotencyService.recordSuccess(user.getId(), idempotencyKey, receipt);
+        auditService.logEvent(
+                user.getUsername(),
+                user.getRole().name(),
+                "MONEY_WITHDRAWAL",
+                "/api/withdrawals",
+                "SUCCESS",
+                null,
+                "Withdrew " + request.amount() + " paise from account " + lockedUserAcc.getId() + " (tx: " + tx.getReferenceId() + ")"
+        );
         return receipt;
     }
 
@@ -159,6 +189,15 @@ public class LedgerPostingService {
         verifyAccountOwnership(lockedSource, user);
 
         if (lockedSource.getBalance() < request.amount()) {
+            auditService.logEvent(
+                    user.getUsername(),
+                    user.getRole().name(),
+                    "MONEY_TRANSFER",
+                    "/api/transfers",
+                    "FAILED",
+                    null,
+                    "Insufficient funds for transfer from account " + lockedSource.getId() + ": available " + lockedSource.getBalance() + " paise, requested " + request.amount() + " paise"
+            );
             throw new InsufficientFundsException("Insufficient funds. Available: " + lockedSource.getBalance() + " paise, requested: " + request.amount() + " paise");
         }
 
@@ -191,6 +230,15 @@ public class LedgerPostingService {
         );
 
         idempotencyService.recordSuccess(user.getId(), idempotencyKey, receipt);
+        auditService.logEvent(
+                user.getUsername(),
+                user.getRole().name(),
+                "MONEY_TRANSFER",
+                "/api/transfers",
+                "SUCCESS",
+                null,
+                "Transferred " + request.amount() + " paise from account " + lockedSource.getId() + " to " + lockedTarget.getId() + " (tx: " + tx.getReferenceId() + ")"
+        );
         return receipt;
     }
 
@@ -201,6 +249,15 @@ public class LedgerPostingService {
 
     private void verifyAccountOwnership(Account account, User user) {
         if (!Objects.equals(account.getUserId(), user.getId())) {
+            auditService.logEvent(
+                    user.getUsername(),
+                    user.getRole().name(),
+                    "ACCESS_DENIED_IDOR",
+                    "/api/money",
+                    "DENIED",
+                    null,
+                    "Unauthorized access attempt to account " + account.getId() + " by " + user.getUsername()
+            );
             throw new ResourceNotFoundException("Account not found: " + account.getId());
         }
     }

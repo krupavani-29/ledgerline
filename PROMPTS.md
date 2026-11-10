@@ -137,3 +137,24 @@ This document records the prompts given to AI coding tools during the developmen
   4. Created 6 comprehensive integration tests in `MoneyEngineIT`: input validation (400 on <= 0, > 100M paise, missing header), transfer validation (self-transfer 400, foreign account 404), payload mismatch on key reuse (422), 20 parallel requests with identical key returning single transaction receipt, 50 parallel withdrawals never going negative under concurrent load, and total ledger conservation summing to 0 paise.
 - **Commit Reference**: [`a63999e`](https://github.com/krupavani-29/ledgerline/commit/a63999e)
 
+---
+
+## Entry 9: Append-Only Triggers, Resilient Cryptographic Audit Trail, and System Integrity Reconciliation (Module 4)
+- **Date**: 2026-11-10
+- **Prompt**:
+  > *"Implement Module 4: Audit + statements. Audit every money action and every denied access attempt (who, what, target, result, ip, time, prev_hash, hash). GET /api/accounts/{id}/statement (paginated), GET /api/audit (auditor/admin), GET /api/integrity (total ledger sum = 0 and each balance = sum of its entries; also verifies hash chain). Tests: UPDATE/DELETE on ledger/audit fails; tampering detected by /api/integrity."*
+- **What the tool produced**:
+  Initially, H2 trigger classes were placed in `src/main` despite H2 being scoped as `<scope>test</scope>` in `pom.xml`. Furthermore, security audit logging was initially executed within the caller's `@Transactional` boundary, which caused audit log entries for denied access attempts to be rolled back when `ResourceNotFoundException` was thrown. Additionally, the genesis block in `V2__seed_data.sql` utilized SQL `NOW()` with a hardcoded empty SHA-256 hash, causing hash chain verification to flag false-positive tampering on sequence 1.
+- **What was wrong with it**:
+  1. Placing test-scoped triggers in `src/main` broke compilation because `org.h2.api.Trigger` was absent from main compile dependencies.
+  2. If an audit log entry for a denied access attempt (e.g. IDOR enumeration probe) is rolled back along with the aborted transaction, security officers and auditors cannot detect attack patterns, violating non-repudiation.
+  3. Non-deterministic timestamps (`NOW()`) in the genesis migration made sequence 1's entry hash non-reproducible during cryptographic integrity verification.
+- **What I did instead**:
+  1. Relocated `H2AppendOnlyTrigger` and `DatabaseTriggerInitializer` to `src/test/java`, maintaining test parity with PostgreSQL's `V3__triggers.sql` without polluting production sources.
+  2. Engineered `AuditService.logEvent()` to acquire a direct auto-committing database connection from the pool (`conn.setAutoCommit(true)`), ensuring security audit logs are immediately and permanently committed to disk even when outer requests fail with 401, 403, or 404.
+  3. Replaced dynamic timestamps in the genesis migration with a canonical UTC timestamp (`2026-01-01 00:00:00+00`) and the mathematically verified SHA-256 hash (`d45d0aa80bb6faa8295fd4a9971240a021fa7a23770d7434206b257fb944084c`).
+  4. Implemented `StatementService` (paginated transaction history with 404 anti-enumeration defense), `AuditController` (restricted to AUDITOR/ADMIN), and `IntegrityService` (verifying total ledger conservation $\sum \text{legs} \equiv 0$, account balance reconciliation, and unbroken cryptographic hash chaining).
+  5. Created and verified 10 comprehensive integration tests in `AuditAndIntegrityIT` confirming trigger immutability, tamper detection, and audit logging.
+- **Commit Reference**: [`63f6e6c`](https://github.com/krupavani-29/ledgerline/commit/63f6e6c)
+
+

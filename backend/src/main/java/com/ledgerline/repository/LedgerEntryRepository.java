@@ -1,6 +1,8 @@
 package com.ledgerline.repository;
 
 import com.ledgerline.model.LedgerEntry;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,6 +16,8 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, Long> 
     List<LedgerEntry> findByTransactionId(Long transactionId);
 
     List<LedgerEntry> findByAccountIdOrderByCreatedAtDesc(Long accountId);
+
+    Page<LedgerEntry> findByAccountIdOrderByIdDesc(Long accountId, Pageable pageable);
 
     // AGENTS.md Rule 3: Verification of system-wide double-entry conservation (sum = 0)
     @Query("SELECT COALESCE(SUM(l.amount), 0) FROM LedgerEntry l")

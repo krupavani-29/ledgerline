@@ -31,9 +31,9 @@ INSERT INTO ledger_entries (id, transaction_id, account_id, amount, running_bala
 INSERT INTO audit_log (
     id, sequence_num, timestamp, actor_username, actor_role, action, target_resource, result, ip_address, details, previous_hash, entry_hash
 ) VALUES (
-    1, 1, NOW(), 'SYSTEM', 'ADMIN', 'SYSTEM_INITIALIZATION', 'LEDGERLINE_GENESIS', 'ALLOWED', '127.0.0.1', '{"version":"1.0.0"}',
+    1, 1, '2026-01-01 00:00:00+00', 'SYSTEM', 'ADMIN', 'SYSTEM_INITIALIZATION', 'LEDGERLINE_GENESIS', 'ALLOWED', '127.0.0.1', '{"version":"1.0.0"}',
     '0000000000000000000000000000000000000000000000000000000000000000',
-    'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+    'd45d0aa80bb6faa8295fd4a9971240a021fa7a23770d7434206b257fb944084c'
 );
 
 -- Advance auto-increment sequences past seeded IDs

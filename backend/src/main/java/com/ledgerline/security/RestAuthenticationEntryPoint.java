@@ -2,6 +2,7 @@ package com.ledgerline.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ledgerline.dto.ApiError;
+import com.ledgerline.service.AuditService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
@@ -17,11 +18,31 @@ import java.io.IOException;
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final AuditService auditService;
+
+    public RestAuthenticationEntryPoint(AuditService auditService) {
+        this.auditService = auditService;
+    }
 
     @Override
     public void commence(HttpServletRequest request,
                          HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
+        String ipAddress = request.getHeader("X-Forwarded-For");
+        if (ipAddress == null || ipAddress.isBlank()) {
+            ipAddress = request.getRemoteAddr();
+        }
+
+        auditService.logEvent(
+                "anonymous",
+                "ANONYMOUS",
+                "ACCESS_DENIED_401",
+                request.getRequestURI(),
+                "DENIED",
+                ipAddress,
+                authException.getMessage()
+        );
+
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 

@@ -20,11 +20,13 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
+    private final AuditService auditService;
     private final SecureRandom random = new SecureRandom();
 
-    public AccountService(AccountRepository accountRepository, UserRepository userRepository) {
+    public AccountService(AccountRepository accountRepository, UserRepository userRepository, AuditService auditService) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
+        this.auditService = auditService;
     }
 
     // Security Decision: Identity is derived strictly from the authenticated JWT subject (Rule 7).
@@ -56,6 +58,15 @@ public class AccountService {
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + accountId));
 
         if (user.getRole() == Role.HOLDER && !Objects.equals(account.getUserId(), user.getId())) {
+            auditService.logEvent(
+                    user.getUsername(),
+                    user.getRole().name(),
+                    "ACCOUNT_ACCESS_DENIED",
+                    "/api/accounts/" + accountId,
+                    "DENIED",
+                    null,
+                    "Unauthorized account read attempt: account " + accountId + " by " + username
+            );
             throw new ResourceNotFoundException("Account not found: " + accountId);
         }
 
