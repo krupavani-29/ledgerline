@@ -234,6 +234,10 @@ class Store {
   getUserByUsername(username) {
     return this.state.users.find(u => u.username.toLowerCase() === username.toLowerCase());
   }
+  /** Look up a user by email address (case-insensitive). */
+  getUserByEmail(email) {
+    return this.state.users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
+  }
 
   getAccounts() { return [...this.state.accounts]; }
   getAccountById(id) { return this.state.accounts.find(a => a.id === id); }

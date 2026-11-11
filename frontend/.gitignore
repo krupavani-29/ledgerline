@@ -1,0 +1,27 @@
+# Dependency directories
+node_modules/
+
+# Production build output
+dist/
+build/
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Vite cache
+.vite/
+
+# Editor directories
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
