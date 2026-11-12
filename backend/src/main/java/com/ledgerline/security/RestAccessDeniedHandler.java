@@ -6,28 +6,38 @@ import com.ledgerline.service.AuditService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
+import org.springframework.lang.NonNull;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-// AGENTS.md Rule 10: Uniform JSON errors {code, message, traceId}.
-// Security Decision: When an authenticated user lacks sufficient privileges (e.g. AUDITOR on write), return 403 JSON.
+/**
+ * Returns a uniform JSON 403 response when an authenticated user lacks the required role.
+ * <p>
+ * Per AGENTS.md Rule 10: no HTML error pages or stack traces are ever sent to clients.
+ * Per AGENTS.md Rule 9: every 403 access denial is recorded in the audit log.
+ */
 @Component
 public class RestAccessDeniedHandler implements AccessDeniedHandler {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AuditService auditService;
 
-    public RestAccessDeniedHandler(AuditService auditService) {
+    public RestAccessDeniedHandler(@NonNull AuditService auditService) {
         this.auditService = auditService;
     }
 
     @Override
-    public void handle(HttpServletRequest request,
-                       HttpServletResponse response,
-                       AccessDeniedException accessDeniedException) throws IOException {
+    public void handle(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull AccessDeniedException accessDeniedException
+    ) throws IOException {
         String ipAddress = request.getHeader("X-Forwarded-For");
         if (ipAddress == null || ipAddress.isBlank()) {
             ipAddress = request.getRemoteAddr();
@@ -35,11 +45,11 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
 
         String username = "anonymous";
         String role = "ANONYMOUS";
-        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated()) {
             username = auth.getName();
             role = auth.getAuthorities().stream()
-                    .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+                    .map(GrantedAuthority::getAuthority)
                     .findFirst()
                     .orElse("ROLE_USER")
                     .replace("ROLE_", "");
@@ -57,9 +67,9 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
 
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-
-        ApiError error = ApiError.of("FORBIDDEN", "Access denied: Insufficient privileges for this resource");
-        objectMapper.writeValue(response.getOutputStream(), error);
+        objectMapper.writeValue(
+                response.getOutputStream(),
+                ApiError.of("FORBIDDEN", "Access denied: Insufficient privileges for this resource")
+        );
     }
 }
-
